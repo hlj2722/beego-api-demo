@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"beego-api-demo/models"
 	"errors"
 	"fmt"
 	"github.com/astaxie/beego"
@@ -9,14 +8,19 @@ import (
 	"time"
 )
 
-func ParaseToken(authorization string) (*models.MyCustomClaims, bool, error) {
-	token, _ := jwt.ParseWithClaims(authorization, &models.MyCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+type MyCustomClaims struct {
+	UId int64 `json:"uid"`
+	jwt.StandardClaims
+}
+
+func ParaseToken(authorization string) (*MyCustomClaims, bool, error) {
+	token, _ := jwt.ParseWithClaims(authorization, &MyCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, nil
 		}
 		return []byte(beego.AppConfig.String("authKey")), nil
 	})
-	if claims, ok := token.Claims.(*models.MyCustomClaims); ok && token.Valid {
+	if claims, ok := token.Claims.(*MyCustomClaims); ok && token.Valid {
 		fmt.Println("claims:", claims)
 		return claims, true, nil
 	}
@@ -25,7 +29,7 @@ func ParaseToken(authorization string) (*models.MyCustomClaims, bool, error) {
 
 func GenToken(uId int64) (string, error) {
 	expireToken := time.Now().Add(time.Hour * 24).Unix()
-	claims := models.MyCustomClaims{
+	claims := MyCustomClaims{
 		uId,
 		jwt.StandardClaims{
 			ExpiresAt: expireToken,
