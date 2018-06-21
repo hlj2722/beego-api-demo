@@ -3,21 +3,15 @@ package controllers
 import (
 	"beego-api-demo/models"
 	"encoding/json"
-	"strings"
-	"time"
+	"log"
 
 	"github.com/astaxie/beego"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/astaxie/beego/validation"
 )
 
 type UserController struct {
-	baseController
+	BaseController
 }
-
-//Auth Key
-const (
-	key = "1BD6C43CA0BBF4B7ABA5E486D6A5AA2D"
-)
 
 // @Title 用户注册
 // @Description 用户注册 http://localhost:8080/api/v1/user/1/register
@@ -28,7 +22,7 @@ const (
 // @router / [post]
 func (this *UserController) Register() {
 	result := DataResponse{}
-	userForm := UserForm{}
+	userForm := models.UserForm{}
 	json.Unmarshal(this.Ctx.Input.RequestBody, &userForm)
 	userMod := models.User{}
 	userMod.Username = userForm.UserName
@@ -51,24 +45,22 @@ func (this *UserController) Register() {
 // @router / [post]
 func (this *UserController) Login() {
 	result := DataResponse{}
-	userForm := UserForm{}
+	userForm := models.UserForm{}
 	json.Unmarshal(this.Ctx.Input.RequestBody, &userForm)
-	username := userForm.UserName
-	password := userForm.PassWord
-
-	userMod := &models.User{Username: username, Password: password}
+	valid := validation.Validation{}
+	b, err := valid.Valid(&userForm)
+	if err != nil {
+		return
+	}
+	if !b {
+		for _, err := range valid.Errors {
+			log.Println(err.Key, err.Message)
+		}
+	}
+	userMod := &models.User{Username: userForm.UserName, Password: userForm.PassWord}
 	uId, err := userMod.Read("Username", "Password")
 	if err == nil {
-		expireToken := time.Now().Add(time.Hour * 24).Unix()
-		claims := models.MyCustomClaims{
-			uId,
-			jwt.StandardClaims{
-				ExpiresAt: expireToken,
-				Issuer:    "6617.com",
-			},
-		}
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		tokenStr, err := token.SignedString([]byte(key))
+		tokenStr, err := this.GenToken(uId)
 		if err != nil {
 			beego.Debug(err.Error())
 		}
@@ -88,29 +80,14 @@ func (this *UserController) Login() {
 // @router / [get]
 func (this *UserController) Auth() {
 	result := DataResponse{}
-	auth := strings.TrimSpace(this.Ctx.Request.Header.Get("auth"))
-	if len(auth) == 0 {
-		result = Reponse(1, "", "lost anth string")
+	isValid, err := this.ValidToken()
+	if isValid {
+		result = Reponse(2000, "", "auth success")
 	} else {
-		token, _ := jwt.ParseWithClaims(auth, &models.MyCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, nil
-			}
-			return []byte(key), nil
-		})
-		if claims, ok := token.Claims.(*models.MyCustomClaims); ok && token.Valid {
-			result = Reponse(2000, claims, "")
-		} else {
-			result = Reponse(4001, claims, "auth error")
-		}
+		result = Reponse(4001, "", err.Error())
 	}
 	this.Data["json"] = result
 	this.ServeJSON()
-}
-
-type UserForm struct {
-	UserName string `json:"username"`
-	PassWord string `json:"password"`
 }
 
 // @Title 获取所有用户数据

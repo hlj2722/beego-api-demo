@@ -3,8 +3,6 @@ package models
 import (
 	"time"
 
-	"fmt"
-
 	"github.com/astaxie/beego/orm"
 )
 
@@ -15,6 +13,11 @@ type User struct {
 	Phone    string    `orm:"size(20)"`
 	Password string    `orm:"size(32)"`
 	AddTime  time.Time `orm:"auto_now_add;type(datetime)"`
+}
+
+type UserForm struct {
+	UserName string `valid:"Required;MinSize(4);MaxSize(20)"` // Name     不能为空并且最小长度是4 最大长度是20
+	PassWord string `valid:"Required;MinSize(6);MaxSize(20)"` // PassWord 不能为空并且最小长度是4 最大长度是20
 }
 
 func (m *User) GetAllUser() []*User {
@@ -38,7 +41,6 @@ func (m *User) Insert() error {
 	if _, err := orm.NewOrm().Insert(m); err != nil {
 		return err
 	}
-	fmt.Println("m>>>>>>>>>>>>>>>>>", m)
 	return nil
 }
 func (m *User) Read(fields ...string) (int64, error) {

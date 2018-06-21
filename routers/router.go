@@ -10,10 +10,15 @@ package routers
 import (
 	"beego-api-demo/controllers"
 
+	"beego-api-demo/filter"
+
 	"github.com/astaxie/beego"
 )
 
 func init() {
+
+	beego.InsertFilter("/api/v1/user/:id:int/update", beego.BeforeRouter, filter.AuthFilter)
+
 	ns := beego.NewNamespace("/api/v1",
 		beego.NSNamespace("/user",
 			beego.NSRouter("/", &controllers.UserController{}, "get:GetAll"),
