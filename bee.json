@@ -8,7 +8,7 @@
 	"watch_ext": [],
 	"dir_structure": {
 		"watch_all": true,
-		"controllers": "",
+		"controllers": " ",
 		"models": "",
 		"others": []
 	},
