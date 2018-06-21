@@ -67,6 +67,3 @@ func (m *User) Delete() error {
 func (m *User) Query() orm.QuerySeter {
 	return orm.NewOrm().QueryTable(m)
 }
-
-type UserProfile struct {
-}
