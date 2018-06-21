@@ -2,33 +2,36 @@ package filter
 
 import (
 	"beego-api-demo/controllers"
-	"fmt"
-
+	"beego-api-demo/models"
+	"beego-api-demo/utils"
 	"github.com/astaxie/beego/context"
 )
 
 var AuthFilter = func(ctx *context.Context) {
-	token := ctx.Input.Header("auth")
-	fmt.Println("token::::::", token)
-
+	token := ctx.Input.Header("Authorization")
 	if token == "" {
-		result := controllers.Reponse(4000, "err", "err")
+		result := controllers.Reponse(4000, "", "require token")
 		ctx.Output.JSON(result, true, true)
 	}
-
-	//models.User{}
-
-	//if len(strToken) != 0 {
-	//	myUser := models.User{Token: strToken}
-	//	if myUser.Read("Token") != nil {
-	//		ctx.Input.SetData("email", myUser.Email)
-	//		ctx.Input.SetData("id", myUser.Id)
-	//		if myUser.IsTest == true {
-	//			beego.AppConfig.Set("", "")
-	//			beego.AppConfig.Set("::password", "")
-	//		}
-	//		return
-	//	}
-	//}
-
+	if claims, isValid, err := utils.ParaseToken(token); err == nil && isValid {
+		var user models.User
+		userMod := models.User{}
+		err := userMod.Query().Filter("id", claims.UId).One(&user)
+		if err != nil {
+			ctx.Output.SetStatus(401)
+			out := map[string]interface{}{}
+			out["msg"] = "err"
+			out["code"] = 4001
+			ctx.Output.JSON(out, true, true)
+			return
+		} else {
+			ctx.Input.SetData("User", user)
+			return
+		}
+	}
+	out := map[string]interface{}{}
+	out["msg"] = "token invalid"
+	out["code"] = 4001
+	ctx.Output.JSON(out, true, true)
+	return
 }

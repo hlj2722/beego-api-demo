@@ -80,7 +80,7 @@ func (this *UserController) Login() {
 // @router / [get]
 func (this *UserController) Auth() {
 	result := DataResponse{}
-	isValid, err := this.ValidToken()
+	_, isValid, err := this.ValidToken()
 	if isValid {
 		result = Reponse(2000, "", "auth success")
 	} else {
@@ -114,6 +114,7 @@ func (this *UserController) GetAll() {
 // @Failure 4004 User not found
 // @router / [post]
 func (this *UserController) Update() {
+
 	result := DataResponse{}
 	uid, _ := this.GetInt64(":id")
 	userMod := models.User{Id: uid}
